@@ -11,8 +11,12 @@
  *   converted through a timezone.
  * - `completion` records confirmed completion only. A date in the past is not
  *   confirmation. When an assessment is done, change "not-confirmed" to "completed".
- * - `marks`: allocated marks from the official guidelines. `null` until supplied,
- *   shown as "To be confirmed", never as 0.
+ * - `moduleWeight`: the assessment's contribution to the final module grade, from
+ *   the official SLIIT rubric named in `source`. It is a weighting, not a mark a
+ *   student achieved; achieved marks are never stored here.
+ *     `null`    graded assessment whose weight is not provided ("Not specified")
+ *     omitted   no weight field is shown
+ *   Never use 0 for an unknown weight.
  */
 
 export type MilestoneType =
@@ -31,6 +35,15 @@ export type MilestoneCategory =
 
 export type CompletionStatus = "completed" | "not-confirmed";
 
+export type ModuleWeight = {
+  /** Percentage of the final module grade. */
+  value: number;
+  /** What the weight covers, e.g. "Individual Proposal Report". */
+  label: string;
+  /** Official rubric document the value comes from. */
+  source?: string;
+};
+
 export type Milestone = {
   id: string;
   /** Position in the official schedule (1 to 13). */
@@ -46,7 +59,7 @@ export type Milestone = {
   /** Major assessment: given more typographic weight in the timeline. */
   key?: boolean;
   description?: string;
-  marks: number | null;
+  moduleWeight?: ModuleWeight | null;
 };
 
 export const milestoneCategories: Record<MilestoneCategory, string> = {
@@ -64,7 +77,7 @@ export const milestoneTypes: Record<MilestoneType, string> = {
   publication: "Publication",
 };
 
-// TODO(content): add allocated marks (`marks`) from the official module guidelines.
+// TODO(content): add further weights only from an official SLIIT rubric or guideline.
 export const milestones: Milestone[] = [
   {
     id: "proposal-submission",
@@ -74,7 +87,11 @@ export const milestones: Milestone[] = [
     type: "submission",
     category: "proposal",
     completion: "completed",
-    marks: null,
+    moduleWeight: {
+      value: 5,
+      label: "Individual Proposal Report",
+      source: "Proposal Report-Individual.pdf",
+    },
   },
   {
     id: "proposal-presentation",
@@ -85,7 +102,11 @@ export const milestones: Milestone[] = [
     type: "presentation",
     category: "proposal",
     completion: "completed",
-    marks: null,
+    moduleWeight: {
+      value: 5,
+      label: "Proposal Presentation",
+      source: "Proposal Presentation.pdf",
+    },
   },
   {
     id: "checklist-submission",
@@ -95,7 +116,6 @@ export const milestones: Milestone[] = [
     type: "submission",
     category: "progress",
     completion: "completed",
-    marks: null,
   },
   {
     id: "progress-presentation-1",
@@ -106,7 +126,11 @@ export const milestones: Milestone[] = [
     type: "presentation",
     category: "progress",
     completion: "completed",
-    marks: null,
+    moduleWeight: {
+      value: 15,
+      label: "Progress Presentation 1",
+      source: "Rubric-PP-1.pdf",
+    },
   },
   {
     id: "progress-presentation-2",
@@ -118,7 +142,11 @@ export const milestones: Milestone[] = [
     category: "progress",
     completion: "completed", // TODO(content): set to "completed" once confirmed
     key: true,
-    marks: null,
+    moduleWeight: {
+      value: 18,
+      label: "Progress Presentation 2",
+      source: "PP2 Assessment Criteria.pdf",
+    },
   },
   {
     id: "draft-thesis-submission",
@@ -129,7 +157,6 @@ export const milestones: Milestone[] = [
     category: "final-submissions",
     completion: "not-confirmed",
     key: true,
-    marks: null,
   },
   {
     id: "website-submission",
@@ -140,7 +167,6 @@ export const milestones: Milestone[] = [
     category: "final-submissions",
     completion: "not-confirmed",
     key: true,
-    marks: null,
   },
   {
     id: "final-checklist-submission",
@@ -150,7 +176,6 @@ export const milestones: Milestone[] = [
     type: "submission",
     category: "final-submissions",
     completion: "not-confirmed",
-    marks: null,
   },
   {
     id: "final-presentation-viva",
@@ -162,7 +187,7 @@ export const milestones: Milestone[] = [
     category: "final-evaluation",
     completion: "not-confirmed",
     key: true,
-    marks: null,
+    moduleWeight: null, // weight not provided in the supplied rubrics
   },
   {
     id: "website-evaluation-logbook",
@@ -174,7 +199,7 @@ export const milestones: Milestone[] = [
     category: "final-evaluation",
     completion: "not-confirmed",
     key: true,
-    marks: null,
+    moduleWeight: null, // weight not provided in the supplied rubrics
   },
   {
     id: "research-paper-submission",
@@ -184,7 +209,6 @@ export const milestones: Milestone[] = [
     type: "submission",
     category: "publication",
     completion: "not-confirmed",
-    marks: null,
   },
   {
     id: "final-thesis-submission",
@@ -195,7 +219,6 @@ export const milestones: Milestone[] = [
     category: "final-submissions",
     completion: "not-confirmed",
     key: true,
-    marks: null,
   },
   {
     id: "publication-evidence-submission",
@@ -205,7 +228,6 @@ export const milestones: Milestone[] = [
     type: "publication",
     category: "publication",
     completion: "not-confirmed",
-    marks: null,
   },
 ];
 
@@ -302,9 +324,10 @@ for (const m of milestones) {
       `milestones: "${m.id}" has an invalid endDate "${m.endDate}"`,
     );
   }
-  if (m.marks !== null && !(Number.isFinite(m.marks) && m.marks > 0)) {
+  const w = m.moduleWeight;
+  if (w && !(Number.isFinite(w.value) && w.value > 0 && w.value <= 100)) {
     throw new Error(
-      `milestones: "${m.id}" marks must be a positive number or null`,
+      `milestones: "${m.id}" module weight must be a percentage above 0, or null`,
     );
   }
 }

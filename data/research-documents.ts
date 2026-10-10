@@ -10,18 +10,26 @@
  *   1. Create a sharing link ("Anyone with the link can view"):
  *        Google Drive  https://drive.google.com/file/d/<id>/view
  *        OneDrive      https://1drv.ms/... or https://<tenant>-my.sharepoint.com/...
- *        Canva         https://www.canva.com/design/<id>/view
+ *        Canva         https://www.canva.com/design/<id>/<token>/view (view-only;
+ *                      never an /edit link, which can grant editing rights)
  *   2. Paste it as `url` and set `status: "available"`.
  *   3. Set `format` if it is not already set (and `provider` if it cannot be
  *      detected from the URL).
  * To add a resource, append an object to `researchResources`; the UI needs no change.
+ * A whole submission folder is shared once, as its category's `folderUrl`.
  *
  * Rules (enforced by `validateResources` at build time):
  *   - `status: "available"` requires an https URL. Without one, use "coming-soon".
  *   - Only `visibility: "public"` entries are ever rendered on the website.
+ *   - A resource with `hold` is never linked, even with a URL (e.g. a Canva
+ *     link that opens the editor). Remove `hold` once the link is fixed.
+ *   - Canva URLs containing /edit fail the build.
  *   - Never invent filenames, dates, or URLs. `sourceName` is the exact name in the
  *     submission folder and is left out when the real file is not yet known.
  */
+
+import { team } from "@/data/team";
+import { formatDateRange, formatDateRangeLong, milestones } from "@/data/milestones";
 
 export type ResourceFormat = "PDF" | "DOCX" | "PPTX" | "XLSX" | "FOLDER" | "LINK" | "OTHER";
 export type ResourceProvider = "google-drive" | "onedrive" | "canva" | "other";
@@ -55,6 +63,12 @@ export type ResearchDocument = {
   sourceName?: string;
   /** Also listed in the Presentations section under this assessment stage. */
   presentationStage?: PresentationStage;
+  /** Subfolder inside the category folder, used to group rows (e.g. "Individual Reports"). */
+  group?: string;
+  /** Team member id (data/team.ts) for documents written by one researcher. */
+  owner?: string;
+  /** Why a supplied URL is withheld from the website. While set, the resource is not linked. */
+  hold?: string;
 };
 
 export type FilterId = "all" | "proposal" | "presentations" | "research-paper" | "final-reports" | "other";
@@ -67,6 +81,8 @@ export type DocumentCategory = {
   description: string;
   filter: Exclude<FilterId, "all">;
   order: number;
+  /** Public sharing link for the whole submission folder ("Anyone with the link can view"). */
+  folderUrl?: string;
 };
 
 export const documentCategories: DocumentCategory[] = [
@@ -77,6 +93,7 @@ export const documentCategories: DocumentCategory[] = [
     description: "Individual proposal reports and the proposal presentation.",
     filter: "proposal",
     order: 1,
+    folderUrl: "https://drive.google.com/drive/folders/14xoAxrcZv_581UBSwosLjeEIeky58cRI?usp=drive_link",
   },
   {
     id: "progress-presentation-1",
@@ -85,6 +102,7 @@ export const documentCategories: DocumentCategory[] = [
     description: "Slides for the first progress review.",
     filter: "presentations",
     order: 2,
+    folderUrl: "https://drive.google.com/drive/folders/1S05OK1YICZ9aFYDXDeQOGH7uO2X19Wq_?usp=drive_link",
   },
   {
     id: "progress-presentation-2",
@@ -93,6 +111,7 @@ export const documentCategories: DocumentCategory[] = [
     description: "Slides for the second progress review.",
     filter: "presentations",
     order: 3,
+    folderUrl: "https://drive.google.com/drive/folders/1GxSziNrQD7fMT-V0Jz09qR5fOm-kc1z3?usp=drive_link",
   },
   {
     id: "research-paper",
@@ -117,6 +136,7 @@ export const documentCategories: DocumentCategory[] = [
     description: "Research checklists submitted during the project.",
     filter: "other",
     order: 6,
+    folderUrl: "https://drive.google.com/drive/folders/1glNfMq5OkoKh6zkQxH-wNjKHO94KLBPJ?usp=drive_link",
   },
   {
     id: "website",
@@ -153,57 +173,87 @@ export const filters: { id: FilterId; label: string }[] = [
   { id: "other", label: "Other" },
 ];
 
-// Seeded from the verified folder structure. TODO(content): add each sharing URL.
+// Seeded from the verified folder structure (public Drive folders checked October 2026).
+
+// The canva.link URLs were supplied by the group. They redirect to Canva share links
+// ending /edit, so keep each design's link access at "Can view" in Canva.
+
 export const researchResources: ResearchDocument[] = [
-  // Project Proposal
+  // Project Proposal / Individual Reports (filenames verified in the public folder).
+  ...(
+    [
+      ["dinitha-fernando", "R26-IT-038_IT22090744_Fernando M.D.T.pdf", "https://drive.google.com/file/d/1MM_0yKsCJdky_kWt59-mc0qVYWo92CYY/view?usp=drive_link"],
+      ["aweesha-wijesundara", "R26-IT-038_IT22183668_Wijesundara W.M.A.T.pdf", "https://drive.google.com/file/d/11P0gKfzTEvJfqIFj4gHcnxOGze_s5qe6/view"],
+      ["pratheesha-silva", "R26-IT-038_IT22219602_Silva S.P.S.pdf", "https://drive.google.com/file/d/1T83ULGNX1GYrgBaYv72IUPQI4J1MIpdl/view?usp=drive_link"],
+      ["ishara-udayanga", "R26-IT-038_IT22251046_Athapathtu A.W.M.I.U.pdf", "https://drive.google.com/file/d/1cYlINvdwTwWCUBZijGsMDKFKldd0j2bH/view?usp=drive_link"],
+    ] as const
+  ).map(
+    ([owner, sourceName, url]): ResearchDocument => ({
+      id: `proposal-report-${owner}`,
+      category: "project-proposal",
+      group: "Individual Reports",
+      title: "Individual Proposal Report",
+      owner,
+      format: "PDF",
+      kind: "document",
+      sourceName,
+      url,
+      status: "available",
+      visibility: "public",
+    }),
+  ),
+
+  // Project Proposal / Presentation
   {
-    id: "proposal-individual-reports",
+    id: "proposal-slides",
     category: "project-proposal",
-    title: "Individual Proposal Reports",
-    description: "Proposal reports for each of the four research components.",
-    format: "FOLDER",
-    kind: "document",
-    sourceName: "Individual Reports",
-    status: "coming-soon",
+    group: "Presentation",
+    title: "Proposal Presentation Slides",
+    provider: "canva",
+    kind: "presentation",
+    presentationStage: "proposal",
+    url: "https://canva.link/ttri8imzfh4gop6",
+    status: "available",
     visibility: "public",
   },
   {
-    id: "proposal-presentation",
+    id: "proposal-pptx",
     category: "project-proposal",
+    group: "Presentation",
     title: "Proposal Presentation",
-    description: "Slides presented at the proposal assessment.",
-    format: "FOLDER",
+    format: "PPTX",
     kind: "presentation",
-    sourceName: "Presentation",
+    sourceName: "R26-038-IT-Proposal Presentation.pptx",
     presentationStage: "proposal",
-    status: "coming-soon",
+    url: "https://docs.google.com/presentation/d/1qEuboaSV1y0smN8TbyThqSG1Ob15aV4c/edit?usp=drive_link&ouid=112580306435014240380&rtpof=true&sd=true",
+    status: "available",
     visibility: "public",
   },
 
-  // Progress Presentation - 1
+  // Progress Presentation - 1 / Presentation
   {
-    id: "pp1-presentation",
+    id: "pp1-slides",
     category: "progress-presentation-1",
+    group: "Presentation",
+    title: "PP1 Presentation Slides",
+    provider: "canva",
+    kind: "presentation",
+    presentationStage: "pp1",
+    url: "https://canva.link/vcfdcwi20zbslxw",
+    status: "available",
+    visibility: "public",
+  },
+  {
+    id: "pp1-pptx",
+    category: "progress-presentation-1",
+    group: "Presentation",
     title: "PP1 Presentation",
-    description: "Slide deck for the first progress review.",
     format: "PPTX",
     kind: "presentation",
     sourceName: "PP1 Presentation R26-IT-038.pptx",
     presentationStage: "pp1",
-    status: "coming-soon",
-    visibility: "public",
-  },
-  {
-    id: "pp1-canva",
-    category: "progress-presentation-1",
-    title: "PP1 Presentation on Canva",
-    description: "The same presentation, viewable online in Canva.",
-    format: "LINK",
-    provider: "canva",
-    kind: "presentation",
-    sourceName: "PP1 Presentation Canva Link.url",
-    presentationStage: "pp1",
-    status: "coming-soon",
+    url: "https://docs.google.com/presentation/d/1Aj58pVcnpXi-1noi4xURjbtjPjSNhrDi/edit?usp=drive_link&ouid=112580306435014240380&rtpof=true&sd=true",
+    status: "available",
     visibility: "public",
   },
   {
@@ -217,15 +267,30 @@ export const researchResources: ResearchDocument[] = [
     visibility: "internal",
   },
 
-  // Progress Presentation - 2 (contents not yet verified)
+  // Progress Presentation - 2 / Presentation
   {
-    id: "pp2-presentation",
+    id: "pp2-slides",
     category: "progress-presentation-2",
-    title: "PP2 Presentation",
-    description: "Slide deck for the second progress review.",
+    group: "Presentation",
+    title: "PP2 Presentation Slides",
+    provider: "canva",
     kind: "presentation",
     presentationStage: "pp2",
-    status: "coming-soon",
+    url: "https://canva.link/dc81xwv3jbrdwwe",
+    status: "available",
+    visibility: "public",
+  },
+  {
+    id: "pp2-pptx",
+    category: "progress-presentation-2",
+    group: "Presentation",
+    title: "PP2 Presentation",
+    format: "PPTX",
+    kind: "presentation",
+    sourceName: "PP2 Presentation R26-IT-038.pptx",
+    presentationStage: "pp2",
+    url: "https://docs.google.com/presentation/d/1KrSVLNtDc_Ze0SkzM4GTnG0SA6yFEMNH/edit?usp=drive_link&ouid=112580306435014240380&rtpof=true&sd=true",
+    status: "available",
     visibility: "public",
   },
 
@@ -318,9 +383,9 @@ export function isValidResourceUrl(url: string | undefined): url is string {
   }
 }
 
-/** A resource is linkable only when marked available AND it has a valid https URL. */
+/** A resource is linkable only when marked available, not on hold, AND it has a valid https URL. */
 export function isAvailable(r: ResearchDocument): r is ResearchDocument & { url: string } {
-  return r.status === "available" && isValidResourceUrl(r.url);
+  return r.status === "available" && !r.hold && isValidResourceUrl(r.url);
 }
 
 export function detectProvider(r: ResearchDocument): ResourceProvider | undefined {
@@ -329,14 +394,14 @@ export function detectProvider(r: ResearchDocument): ResourceProvider | undefine
   const host = new URL(r.url).hostname;
   if (host.endsWith("drive.google.com") || host.endsWith("docs.google.com")) return "google-drive";
   if (host.endsWith("1drv.ms") || host.endsWith("onedrive.live.com") || host.endsWith("sharepoint.com")) return "onedrive";
-  if (host.endsWith("canva.com")) return "canva";
+  if (host.endsWith("canva.com") || host === "canva.link") return "canva";
   return "other";
 }
 
 export const providerLabel: Record<ResourceProvider, string> = {
   "google-drive": "Google Drive",
   onedrive: "OneDrive",
-  canva: "Canva",
+  canva: "Canva Slides",
   other: "External link",
 };
 
@@ -357,11 +422,29 @@ export const actionLabel: Record<ResourceKind, string> = {
   resource: "Open Resource",
 };
 
+/** Canva editor links can grant editing rights to anyone holding them. */
+function isCanvaEditUrl(url: string | undefined) {
+  if (!isValidResourceUrl(url)) return false;
+  const { hostname, pathname } = new URL(url);
+  return hostname.endsWith("canva.com") && /\/edit\/?$/.test(pathname);
+}
+
 /** Fails the build on configuration mistakes instead of shipping a broken link. */
 function validateResources(list: ResearchDocument[]) {
   const ids = new Set<string>();
   const categories = new Set(documentCategories.map((c) => c.id));
+  for (const c of documentCategories) {
+    if (c.folderUrl !== undefined && !isValidResourceUrl(c.folderUrl)) {
+      throw new Error(`research-documents: category "${c.id}" has an invalid folderUrl`);
+    }
+  }
   for (const r of list) {
+    if (isCanvaEditUrl(r.url)) {
+      throw new Error(`research-documents: "${r.id}" is a Canva /edit link. Use a view-only link.`);
+    }
+    if (r.owner && !team.some((p) => p.id === r.owner)) {
+      throw new Error(`research-documents: "${r.id}" has an unknown owner "${r.owner}"`);
+    }
     if (ids.has(r.id)) throw new Error(`research-documents: duplicate id "${r.id}"`);
     ids.add(r.id);
     if (!categories.has(r.category)) throw new Error(`research-documents: unknown category on "${r.id}"`);
@@ -393,6 +476,8 @@ export function matchesFilter(r: ResearchDocument, filter: FilterId): boolean {
 export type ResourceView = {
   id: string;
   title: string;
+  group?: string;
+  owner?: { name: string; studentId?: string };
   description?: string;
   format?: string;
   provider?: string;
@@ -411,20 +496,24 @@ export type CategoryView = {
   folder: string;
   description: string;
   filter: DocumentCategory["filter"];
+  folderUrl?: string;
   resources: ResourceView[];
 };
 
 export function toResourceView(r: ResearchDocument): ResourceView {
   const provider = detectProvider(r);
+  const owner = r.owner ? team.find((p) => p.id === r.owner) : undefined;
   return {
     id: r.id,
     title: r.title,
+    group: r.group,
+    owner: owner ? { name: owner.name, studentId: owner.studentId } : undefined,
     description: r.description,
     format: r.format ? formatLabel[r.format] : undefined,
     provider: provider ? providerLabel[provider] : undefined,
     sourceName: r.sourceName,
     url: isAvailable(r) ? r.url : undefined,
-    action: actionLabel[r.kind],
+    action: provider === "canva" ? "View Slides" : actionLabel[r.kind],
     kind: r.kind,
     filters: filters.map((f) => f.id).filter((f) => matchesFilter(r, f)),
     presentationStage: r.presentationStage,
@@ -438,6 +527,61 @@ export function getCategoryViews(): CategoryView[] {
     folder: c.folder,
     description: c.description,
     filter: c.filter,
+    folderUrl: c.folderUrl,
     resources: publicResources.filter((r) => r.category === c.id).map(toResourceView),
   }));
+}
+
+/* ------------------------------------------------------------------ */
+/* Presentations: one card per assessment stage, built from the same   */
+/* records, folder links, and milestone dates as the Documents archive. */
+/* ------------------------------------------------------------------ */
+
+export const presentationStages: {
+  id: PresentationStage;
+  title: string;
+  /** Assessment type label shown above the title. */
+  assessment: string;
+  /** Date and assessment weight come from this milestone. */
+  milestoneId: string;
+  /** The Drive folder for this stage is this category's `folderUrl`. */
+  category: CategoryId;
+}[] = [
+  { id: "proposal", title: "Proposal Presentation", assessment: "Project Proposal", milestoneId: "proposal-presentation", category: "project-proposal" },
+  { id: "pp1", title: "Progress Presentation 1", assessment: "Progress Review 1", milestoneId: "progress-presentation-1", category: "progress-presentation-1" },
+  { id: "pp2", title: "Progress Presentation 2", assessment: "Progress Review 2", milestoneId: "progress-presentation-2", category: "progress-presentation-2" },
+  { id: "final", title: "Final Presentation", assessment: "Final Assessment", milestoneId: "final-presentation-viva", category: "final-report-presentation" },
+];
+
+export type PresentationView = {
+  id: PresentationStage;
+  title: string;
+  assessment: string;
+  date?: { short: string; long: string };
+  weight?: number;
+  /** Canva slides; `url` only when publishable. */
+  slides: { title: string; url?: string };
+  driveFolderUrl?: string;
+  /** Slide files registered in the folder; `url` only when a file-level link exists. */
+  files: { id: string; name: string; format?: string; url?: string }[];
+};
+
+export function getPresentationViews(): PresentationView[] {
+  return presentationStages.map((s) => {
+    const m = milestones.find((x) => x.id === s.milestoneId);
+    const records = publicResources.filter((r) => r.presentationStage === s.id);
+    const slides = records.find((r) => detectProvider(r) === "canva");
+    return {
+      id: s.id,
+      title: s.title,
+      assessment: s.assessment,
+      date: m ? { short: formatDateRange(m.startDate, m.endDate), long: formatDateRangeLong(m.startDate, m.endDate) } : undefined,
+      weight: m?.moduleWeight?.value,
+      slides: { title: slides?.title ?? `${s.title} slides`, url: slides && isAvailable(slides) ? slides.url : undefined },
+      driveFolderUrl: documentCategories.find((c) => c.id === s.category)?.folderUrl,
+      files: records
+        .filter((r) => r !== slides && r.sourceName)
+        .map((r) => ({ id: r.id, name: r.sourceName!, format: r.format, url: isAvailable(r) ? r.url : undefined })),
+    };
+  });
 }

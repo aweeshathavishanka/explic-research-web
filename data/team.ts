@@ -95,7 +95,7 @@ export const team: TeamPerson[] = [
     contribution: "Data-Centric AI Text Detection Engine",
     studentId: "IT22251046",
     formalName: "A.W.M. Ishara Udayanga Athapaththu",
-    image: { src: `${IMAGEKIT}/Edit/Ishara%20Udayanga.png`, width: 1122, height: 1402 },
+    image: { src: `${IMAGEKIT}/Ishara%20Athapaththu.png`, width: 1122, height: 1402 },
   },
   {
     id: "pratheesha-silva",

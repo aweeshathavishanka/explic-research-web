@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useState } from "react";
-import { ChevronDown, FileSpreadsheet, FileText, Folder, Link2, Presentation } from "lucide-react";
+import { ChevronDown, FileSpreadsheet, FileText, Folder, FolderOpen, Link2, Presentation } from "lucide-react";
 // Type-only imports: the resource data itself arrives as public-only props.
 import type { CategoryView, FilterId, ResourceView } from "@/data/research-documents";
 import { ResourceAction } from "@/components/ui/ResourceAction";
@@ -44,7 +44,7 @@ function defaultOpen(categories: CategoryView[]) {
 }
 
 function ResourceRow({ r }: { r: ResourceView }) {
-  const meta = [r.format, r.provider].filter(Boolean).join(", ");
+  const meta = [r.owner?.studentId, r.format, r.provider].filter(Boolean).join(", ");
   return (
     <li className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:gap-5">
       <div className="flex min-w-0 flex-1 gap-4">
@@ -56,10 +56,13 @@ function ResourceRow({ r }: { r: ResourceView }) {
           <ResourceIcon r={r} />
         </span>
         <div className="min-w-0">
-          <p className="text-[15px] font-medium text-fg">{r.title}</p>
+          {/* Individual documents lead with the researcher; the shared title follows. */}
+          <p className="text-[15px] font-medium text-fg">{r.owner ? r.owner.name : r.title}</p>
+          {r.owner ? <p className="mt-0.5 text-sm text-muted">{r.title}</p> : null}
           {r.description ? <p className="mt-0.5 text-sm leading-relaxed text-muted">{r.description}</p> : null}
           {meta || r.sourceName ? (
-            <p className="mt-1.5 break-words font-mono text-xs text-subtle">
+            <p className="mt-1.5 wrap-break-word font-mono text-xs text-subtle">
+              {r.owner?.studentId ? <span className="sr-only">Student ID </span> : null}
               {meta}
               {meta && r.sourceName ? <span aria-hidden> / </span> : null}
               {r.sourceName ? <span className="sr-only">Source file: </span> : null}
@@ -69,9 +72,40 @@ function ResourceRow({ r }: { r: ResourceView }) {
         </div>
       </div>
       <div className="pl-13 sm:pl-0">
-        <ResourceAction url={r.url} label={r.action} title={r.title} />
+        <ResourceAction url={r.url} label={r.action} title={r.owner ? `${r.title}, ${r.owner.name}` : r.title} />
       </div>
     </li>
+  );
+}
+
+/** Rows grouped by subfolder, in first-seen order. Ungrouped rows come first. */
+function groupRows(items: ResourceView[]) {
+  const groups = new Map<string, ResourceView[]>();
+  for (const r of items) {
+    const key = r.group ?? "";
+    groups.set(key, [...(groups.get(key) ?? []), r]);
+  }
+  return [...groups.entries()].sort(([a], [b]) => Number(a !== "") - Number(b !== ""));
+}
+
+function FolderRow({ c }: { c: CategoryView }) {
+  if (!c.folderUrl) return null;
+  return (
+    <div className="flex flex-col gap-3 border-b border-line py-4 sm:flex-row sm:items-center sm:gap-5">
+      <div className="flex min-w-0 flex-1 gap-4">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-accent-line bg-accent-surface text-accent-text">
+          <FolderOpen className="size-4" strokeWidth={1.5} aria-hidden />
+        </span>
+        <div className="min-w-0">
+          <p className="text-[15px] font-medium text-fg">Complete submission folder</p>
+          <p className="mt-0.5 text-sm text-muted">Every file in {c.folder}, as submitted.</p>
+          <p className="mt-1.5 font-mono text-xs text-subtle">Google Drive Resources</p>
+        </div>
+      </div>
+      <div className="pl-13 sm:pl-0">
+        <ResourceAction url={c.folderUrl} label="Open Drive Folder" title={`${c.title} folder`} />
+      </div>
+    </div>
   );
 }
 
@@ -83,6 +117,7 @@ export function DocumentLibrary({ categories, filters }: DocumentLibraryProps) {
   const shown = categories.filter((c) => isCategoryVisible(c, filter));
   const shownResources = shown.flatMap((c) => visibleResources(c, filter));
   const availableCount = shownResources.filter((r) => r.url).length;
+  const folderCount = shown.filter((c) => c.folderUrl).length;
   const allOpen = shown.every((c) => open.has(c.id));
 
   const selectFilter = (id: FilterId) => {
@@ -127,8 +162,8 @@ export function DocumentLibrary({ categories, filters }: DocumentLibraryProps) {
 
       <div className="mt-8 flex flex-wrap items-center justify-between gap-3 border-b border-line pb-4">
         <p className="font-mono text-[13px] text-subtle" aria-live="polite">
-          {shown.length} {shown.length === 1 ? "folder" : "folders"}, {availableCount} of {shownResources.length}{" "}
-          resources available
+          {shown.length} {shown.length === 1 ? "folder" : "folders"}, {folderCount} on Google Drive, {availableCount} of{" "}
+          {shownResources.length} files linked
         </p>
         <button
           type="button"
@@ -161,9 +196,13 @@ export function DocumentLibrary({ categories, filters }: DocumentLibraryProps) {
                   </span>
                   <span className="flex shrink-0 items-center gap-3 pt-1">
                     <span className="hidden font-mono text-xs text-subtle sm:inline">
+                      {c.folderUrl ? <span className="text-accent-text">Drive folder</span> : null}
+                      {c.folderUrl && items.length > 0 ? ", " : null}
                       {items.length === 0
-                        ? "No public items"
-                        : `${available} of ${items.length} available`}
+                        ? c.folderUrl
+                          ? null
+                          : "No public items"
+                        : `${available} of ${items.length} linked`}
                     </span>
                     <ChevronDown
                       className={`size-4 text-subtle transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
@@ -174,13 +213,24 @@ export function DocumentLibrary({ categories, filters }: DocumentLibraryProps) {
                 </button>
               </h3>
               <div id={panelId} hidden={!isOpen} className="border-t border-line px-5 sm:px-6">
+                <FolderRow c={c} />
                 {items.length > 0 ? (
-                  <ul className="divide-y divide-line">
-                    {items.map((r) => (
-                      <ResourceRow key={r.id} r={r} />
-                    ))}
-                  </ul>
-                ) : (
+                  groupRows(items).map(([group, rows]) => (
+                    <div key={group || "_"}>
+                      {group ? (
+                        <h4 className="pt-4 font-mono text-xs text-accent-text">
+                          {group}
+                          <span className="sr-only"> ({rows.length})</span>
+                        </h4>
+                      ) : null}
+                      <ul className="divide-y divide-line">
+                        {rows.map((r) => (
+                          <ResourceRow key={r.id} r={r} />
+                        ))}
+                      </ul>
+                    </div>
+                  ))
+                ) : c.folderUrl ? null : (
                   <p className="py-4 text-sm leading-relaxed text-muted">
                     No documents from this folder are public yet. Administrative records stay internal.
                   </p>

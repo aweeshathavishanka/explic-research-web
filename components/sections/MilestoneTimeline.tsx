@@ -38,6 +38,13 @@ function statusFor(m: Milestone, today: string | null): Status | null {
   return state === "past" ? "not-confirmed" : state === "current" ? "in-progress" : "upcoming";
 }
 
+/** "Module Weight: 5%", naming the component when it is narrower than the milestone. */
+function weightText(m: Milestone) {
+  const w = m.moduleWeight;
+  if (!w) return null;
+  return w.label === m.title ? `Module Weight: ${w.value}%` : `Module Weight: ${w.value}% (${w.label})`;
+}
+
 function DateText({ m }: { m: Milestone }) {
   return (
     <>
@@ -77,6 +84,7 @@ function TimelineRow({ m, today, first, last, showToday }: { m: Milestone; today
   const status = statusFor(m, today);
   const done = m.completion === "completed";
   const lapsed = status === "not-confirmed";
+  const weight = weightText(m);
   const lineClass = last ? `top-0 ${LINE_TO_NODE}` : first && !showToday ? `${LINE_FROM_NODE} bottom-0` : "inset-y-0";
 
   return (
@@ -115,6 +123,7 @@ function TimelineRow({ m, today, first, last, showToday }: { m: Milestone; today
               <span className={`block text-fg ${m.key ? "text-lg font-medium leading-7" : "text-base leading-6"}`}>{m.title}</span>
               <span className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] text-subtle">
                 {milestoneCategories[m.category]}
+                {weight ? <span className="text-muted">{weight}</span> : null}
                 {status ? (
                   <span className="sm:hidden">
                     <StatusBadge status={status} />
@@ -142,10 +151,19 @@ function TimelineRow({ m, today, first, last, showToday }: { m: Milestone; today
                 <dt className="text-[13px] text-subtle">Scheduled</dt>
                 <dd className="mt-1 text-sm text-fg">{formatDateRangeLong(m.startDate, m.endDate)}</dd>
               </div>
-              <div>
-                <dt className="text-[13px] text-subtle">Allocated marks</dt>
-                <dd className={`mt-1 text-sm ${m.marks === null ? "text-subtle" : "text-fg"}`}>{m.marks ?? "To be confirmed"}</dd>
-              </div>
+              {m.moduleWeight !== undefined ? (
+                <div>
+                  <dt className="text-[13px] text-subtle">Module weight</dt>
+                  {m.moduleWeight ? (
+                    <dd className="mt-1 text-sm text-fg">
+                      <span className="font-mono">{m.moduleWeight.value}%</span> of the final module grade
+                      <span className="mt-0.5 block text-[13px] text-subtle">{m.moduleWeight.label}</span>
+                    </dd>
+                  ) : (
+                    <dd className="mt-1 text-sm text-subtle">Not specified</dd>
+                  )}
+                </div>
+              ) : null}
               <div>
                 <dt className="text-[13px] text-subtle">Type</dt>
                 <dd className="mt-1 text-sm text-fg">{milestoneTypes[m.type]}</dd>

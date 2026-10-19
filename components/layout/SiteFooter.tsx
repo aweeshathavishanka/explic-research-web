@@ -1,5 +1,6 @@
 import { navItems, site } from "@/data/site-content";
 import { Wordmark } from "@/components/ui/Logo";
+import { publicAsset } from "@/lib/paths";
 
 export function SiteFooter() {
   return (
@@ -44,11 +45,11 @@ export function SiteFooter() {
           <p>{site.disclaimer}</p>
           <p>
             Typefaces: Google Sans and JetBrains Mono, used under the SIL Open Font License (
-            <a href="/licenses/GoogleSans-OFL.txt" className="underline underline-offset-2 hover:text-fg">
+            <a href={publicAsset("licenses/GoogleSans-OFL.txt")} className="underline underline-offset-2 hover:text-fg">
               Google Sans
             </a>
             ,{" "}
-            <a href="/licenses/JetBrainsMono-OFL.txt" className="underline underline-offset-2 hover:text-fg">
+            <a href={publicAsset("licenses/JetBrainsMono-OFL.txt")} className="underline underline-offset-2 hover:text-fg">
               JetBrains Mono
             </a>
             ).

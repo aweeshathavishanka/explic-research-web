@@ -13,6 +13,8 @@
  * value. Search for "TODO(content)" to find every field awaiting information.
  */
 
+import { publicAsset } from "@/lib/paths";
+
 export type NavItem = { id: string; label: string };
 
 export const navItems: NavItem[] = [
@@ -72,7 +74,7 @@ export const hero = {
   },
   // Shown in place of the video if its URL is invalid or it fails to load.
   figure: {
-    src: "/images/research/xlsr-attention-rollout.webp",
+    src: publicAsset("images/research/xlsr-attention-rollout.webp"),
     width: 968,
     height: 522,
     alt: "Three aligned panels for one speech recording: the waveform, a log-mel spectrogram with high-attention time spans shaded, and the fused attention density over about nine seconds.",

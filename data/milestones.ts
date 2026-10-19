@@ -155,7 +155,7 @@ export const milestones: Milestone[] = [
     startDate: "2026-10-11",
     type: "submission",
     category: "final-submissions",
-    completion: "not-confirmed",
+    completion: "completed",
     key: true,
   },
   {
@@ -165,7 +165,7 @@ export const milestones: Milestone[] = [
     startDate: "2026-10-11",
     type: "submission",
     category: "final-submissions",
-    completion: "not-confirmed",
+    completion: "completed",
     key: true,
   },
   {
@@ -175,7 +175,7 @@ export const milestones: Milestone[] = [
     startDate: "2026-10-14",
     type: "submission",
     category: "final-submissions",
-    completion: "not-confirmed",
+    completion: "completed",
   },
   {
     id: "final-presentation-viva",

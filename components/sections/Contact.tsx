@@ -1,9 +1,15 @@
 import { ArrowUpRight, Mail } from "lucide-react";
 import { site } from "@/data/site-content";
+import { team } from "@/data/team";
 import { ButtonLink } from "@/components/ui/Button";
 import { Section } from "@/components/ui/SectionHeading";
 
 export function Contact() {
+  // Research team members with a public email, in team order.
+  const contacts = team.filter(
+    (p): p is typeof p & { email: string } => p.group === "research" && !!p.email,
+  );
+
   return (
     <Section id="contact" labelledBy="contact-title">
       <div className="grid gap-14 lg:grid-cols-12 lg:gap-10">
@@ -15,19 +21,28 @@ export function Contact() {
             We welcome academic inquiries from evaluators, researchers, and anyone interested in detecting and
             explaining synthetic media.
           </p>
-          <div className="reveal mt-9">
-            {site.contactEmail ? (
+          {site.contactEmail ? (
+            <div className="reveal mt-9">
               <ButtonLink href={`mailto:${site.contactEmail}`} variant="primary">
                 <Mail className="size-4" strokeWidth={1.5} aria-hidden />
                 Email the research group
               </ButtonLink>
-            ) : (
-              <p className="inline-flex items-center gap-3 rounded-full border border-dashed border-line-strong px-5 py-3 text-sm text-muted">
-                <Mail className="size-4" strokeWidth={1.5} aria-hidden />
-                A research contact email will be published here.
-              </p>
-            )}
-          </div>
+            </div>
+          ) : null}
+          <ul className="reveal mt-9 grid gap-x-10 gap-y-5 text-[15px] sm:grid-cols-2">
+            {contacts.map((p) => (
+              <li key={p.id} className="min-w-0">
+                <p className="text-fg">{p.name}</p>
+                <a
+                  href={`mailto:${p.email}`}
+                  className="mt-1 inline-flex max-w-full items-center gap-2 text-accent-text underline-offset-4 hover:underline"
+                >
+                  <Mail className="size-4 shrink-0" strokeWidth={1.5} aria-hidden />
+                  <span className="wrap-break-word min-w-0">{p.email}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
         </div>
 
         <dl className="reveal space-y-5 text-[15px] lg:col-span-4 lg:col-start-9 lg:pt-3">

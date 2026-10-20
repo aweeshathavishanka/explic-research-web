@@ -31,6 +31,8 @@ export type TeamPerson = {
   /** Name as written in the project registration records. */
   formalName?: string;
   links?: { label: string; href: string }[];
+  /** Public contact email, listed in Contact Us. */
+  email?: string;
 };
 
 const IMAGEKIT = "https://ik.imagekit.io/ojcyr6b6l/SLIIT%20-%20Research%20Y4/Team%20Members";
@@ -85,6 +87,7 @@ export const team: TeamPerson[] = [
     contribution: "Hybrid Neural Interpretability Framework (HNIF)",
     studentId: "IT22090744",
     formalName: "Fernando M.D.T",
+    email: "dinitha@dinitha.me",
     image: { src: `${IMAGEKIT}/Dinitha%20Fernando.png`, width: 1080, height: 1350 },
   },
   {
@@ -95,6 +98,7 @@ export const team: TeamPerson[] = [
     contribution: "Data-Centric AI Text Detection Engine",
     studentId: "IT22251046",
     formalName: "A.W.M. Ishara Udayanga Athapaththu",
+    email: "isharaudayanga1000@gmail.com",
     image: { src: `${IMAGEKIT}/Ishara%20Athapaththu.png`, width: 1122, height: 1402 },
   },
   {
@@ -105,6 +109,7 @@ export const team: TeamPerson[] = [
     contribution: "Explainable Spoof Voice Analysis System (ESVAS)",
     studentId: "IT22219602",
     formalName: "Silva S.P.S",
+    email: "pratheeshasilva26@gmail.com",
     image: { src: `${IMAGEKIT}/Edit/Pratheesha%20Silva.png`, width: 1122, height: 1402 },
   },
   {
@@ -115,6 +120,7 @@ export const team: TeamPerson[] = [
     contribution: "Multi-Branch Deepfake Voice Detection",
     studentId: "IT22183668",
     formalName: "Aweesha Thavishanka Wijesundara",
+    email: "aweesha.w@gmail.com",
     image: { src: `${IMAGEKIT}/Edit/Aweesha%20Wijesundara.png`, width: 1122, height: 1402 },
   },
 ];

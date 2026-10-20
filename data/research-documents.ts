@@ -48,6 +48,7 @@ export type ResourceKind = "document" | "presentation" | "paper" | "resource";
 export type PresentationStage = "proposal" | "pp1" | "pp2" | "final";
 
 export type CategoryId =
+  | "taf"
   | "project-proposal"
   | "progress-presentation-1"
   | "progress-presentation-2"
@@ -105,6 +106,14 @@ export type DocumentCategory = {
 
 export const documentCategories: DocumentCategory[] = [
   {
+    id: "taf",
+    folder: "TAF Document",
+    title: "TAF Document",
+    description: "The group's TAF document.",
+    filter: "other",
+    order: 0,
+  },
+  {
     id: "project-proposal",
     folder: "Project Proposal",
     title: "Project Proposal",
@@ -149,6 +158,8 @@ export const documentCategories: DocumentCategory[] = [
     description: "The final research report and final presentation.",
     filter: "final-reports",
     order: 5,
+    folderUrl:
+      "https://drive.google.com/drive/folders/1DgeFVXkHppFGrNnJSf9ixChFQcsz2s3K?usp=sharing",
   },
   {
     id: "checklist-documents",
@@ -193,6 +204,19 @@ export const filters: { id: FilterId; label: string }[] = [
 // ending /edit, so keep each design's link access at "Can view" in Canva.
 
 export const researchResources: ResearchDocument[] = [
+  // TAF Document (listed first in the archive).
+  {
+    id: "taf-document",
+    category: "taf",
+    title: "TAF Document",
+    format: "PDF",
+    kind: "document",
+    action: "View Document",
+    url: "https://drive.google.com/file/d/1TRuNVKiaKDjmsuTpOJty6vkLiCrYt-re/view?usp=sharing",
+    status: "available",
+    visibility: "public",
+  },
+
   // Project Proposal / Individual Reports (filenames verified in the public folder).
   ...(
     [
@@ -257,7 +281,8 @@ export const researchResources: ResearchDocument[] = [
     presentationStage: "proposal",
     url: "https://docs.google.com/presentation/d/1qEuboaSV1y0smN8TbyThqSG1Ob15aV4c/edit?usp=drive_link&ouid=112580306435014240380&rtpof=true&sd=true",
     status: "available",
-    visibility: "public",
+    // PPTX files are kept on record but not shown on the website.
+    visibility: "internal",
   },
 
   // Progress Presentation - 1 / Presentation
@@ -284,7 +309,8 @@ export const researchResources: ResearchDocument[] = [
     presentationStage: "pp1",
     url: "https://docs.google.com/presentation/d/1Aj58pVcnpXi-1noi4xURjbtjPjSNhrDi/edit?usp=drive_link&ouid=112580306435014240380&rtpof=true&sd=true",
     status: "available",
-    visibility: "public",
+    // PPTX files are kept on record but not shown on the website.
+    visibility: "internal",
   },
   {
     id: "pp1-readme",
@@ -321,7 +347,8 @@ export const researchResources: ResearchDocument[] = [
     presentationStage: "pp2",
     url: "https://docs.google.com/presentation/d/1KrSVLNtDc_Ze0SkzM4GTnG0SA6yFEMNH/edit?usp=drive_link&ouid=112580306435014240380&rtpof=true&sd=true",
     status: "available",
-    visibility: "public",
+    // PPTX files are kept on record but not shown on the website.
+    visibility: "internal",
   },
 
   // Research Paper
@@ -405,7 +432,10 @@ export const researchResources: ResearchDocument[] = [
     provider: "canva",
     kind: "presentation",
     presentationStage: "final",
+    action: "View Slides",
+    // Supplied as .../mA/edit; the /edit form fails the build, so the share link is stored as /view.
     url: "https://canva.link/l52soh0z42sm2ag",
+
     status: "available",
     visibility: "public",
   },

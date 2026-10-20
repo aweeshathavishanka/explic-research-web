@@ -12,6 +12,7 @@ export function Hero() {
   // Checked at build time: an invalid URL renders the fallback figure instead of a blank frame.
   const videoSrc = isValidResourceUrl(video.src) ? video.src : null;
   const poster = isValidResourceUrl(video.poster) ? video.poster : undefined;
+  const [titleLead, titleRest] = site.fullTitle.split(hero.titleHighlight);
 
   return (
     // Layers, by source order and no z-index: 1. section surface, 2. slats, 3. content.
@@ -24,10 +25,18 @@ export function Hero() {
 
         <h1
           id="hero-title"
-          className="hero-in mt-5 max-w-5xl text-[2.5rem] font-medium leading-[1.06] text-fg sm:text-6xl lg:text-[4.25rem]"
+          className="hero-in mt-5 max-w-5xl text-balance wrap-break-word text-[1.875rem] font-medium leading-[1.1] text-fg sm:text-5xl lg:text-[3.5rem]"
           style={stagger(1)}
         >
-          Understanding <span className="text-accent-text">What’s Real</span> in the Age of AI.
+          {titleRest === undefined ? (
+            site.fullTitle
+          ) : (
+            <>
+              {titleLead}
+              <span className="text-accent-text">{hero.titleHighlight}</span>
+              {titleRest}
+            </>
+          )}
         </h1>
 
         <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-12 lg:items-center lg:gap-10">

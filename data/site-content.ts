@@ -30,8 +30,7 @@ export const navItems: NavItem[] = [
 export const site = {
   name: "Explic",
   projectId: "R26-IT-038",
-  fullTitle:
-    "Robust, Explainable Multi-Modal Classification of Deepfake Voice and AI-Generated Text",
+  fullTitle: "Robust, Explainable Multi-Model Classification of Deepfake voice and AI-Generated text",
   institution: "Sri Lanka Institute of Information Technology",
   institutionShort: "SLIIT",
   department: "Department of Information Technology",
@@ -57,6 +56,8 @@ export const site = {
 
 export const hero = {
   eyebrow: "SLIIT · Undergraduate Research Project",
+  // Part of `site.fullTitle` shown in the accent colour.
+  titleHighlight: "Deepfake voice and AI-Generated text",
   // [APP] hero sentence, adapted to British spelling (18 words).
   description:
     "Explic analyses AI-generated voice and text, combines multiple detection models, and explains the evidence behind every result.",

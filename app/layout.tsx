@@ -26,7 +26,7 @@ const jetbrainsMono = localFont({
   adjustFontFallback: false,
 });
 
-const title = "Explic: Detecting and Explaining AI-Generated Voice and Text";
+const title = `Explic: ${site.fullTitle}`;
 
 export const metadata: Metadata = {
   ...(site.siteUrl ? { metadataBase: new URL(site.siteUrl) } : {}),
